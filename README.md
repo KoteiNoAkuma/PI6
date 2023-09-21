@@ -4,4 +4,4 @@
 --> Linguagem Utilizada: Python;
 --> Features: Machine Learning, Programação Distribuída e Paralela e consumo de API;
 --> API Owner: Binance.com
--
+
