@@ -1,6 +1,6 @@
 #pip install TA-Lib
 
-import talib
+#import talib
 import numpy as np
 import requests
 import datetime
@@ -35,12 +35,12 @@ def calculateRSI(data):
 def calculateSMA(data):
     return talib.SMA(data['close'], timeperiod=20)
 
-# def pricing
-# def volume
+def calculatePricing(data):
+    return data['close'].mean()
+
+def calculateVolume(data):
+    return data['volume'].mean()
+
 # def LSR (API bybit)
 
-rsi = calculateRSI(data)
-sma = calculateSMA(data)
 
-print(rsi)
-print(sma)
