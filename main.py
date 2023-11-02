@@ -1,18 +1,19 @@
 #pip install TA-Lib
 
-#import talib
+import talib
 import numpy as np
 import requests
 import datetime
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 data = None
 interval = "1d"
 limit = 1000
 
 
-def get_binance_datarequest(ticker, interval, limit, start='2021-02-01 00:00:00'):
+def get_binance_datarequest(ticker, interval, limit, start='2022-03-01 00:00:00'):
     global data
     columns = ['open_time','open', 'high', 'low', 'close', 'volume','close_time', 'qav','num_trades','taker_base_vol','taker_quote_vol', 'ignore']
     start = int(datetime.datetime.timestamp(pd.to_datetime(start))*1000)
@@ -24,23 +25,36 @@ def get_binance_datarequest(ticker, interval, limit, start='2021-02-01 00:00:00'
 
 get_binance_datarequest('BTCUSDT', interval, limit)
 
-print(data.to_string())
-
 # Calculando RSI usando TA-Lib
-# Arrumar
 def calculateRSI(data):
     return talib.RSI(np.array(data['close']), timeperiod=14)
 
-# Media Movel Simples SMA
-def calculateSMA(data):
-    return talib.SMA(data['close'], timeperiod=20)
-
 def calculatePricing(data):
-    return data['close'].mean()
+    return data['close']
 
 def calculateVolume(data):
-    return data['volume'].mean()
+    return data['volume']
 
-# def LSR (API bybit)
+# Calculo do RSI
+rsi_values = calculateRSI(data)
 
+RSI = pd.DataFrame({'RSI': rsi_values}, index=data.index[-len(rsi_values):]) # Dessa forma esse dataframe vai ter o mesmo tamanho dos outros dois dataframes
+PRICING = calculatePricing(data)
+VOLUME = calculateVolume(data)
 
+history_df = pd.concat([RSI, PRICING, VOLUME], axis=1) # Junta os 3 dataframes em um Único
+history_df = history_df.dropna() # Remove as linhas com NaN do dataframe
+
+print(history_df) # Retorna dados de 16 de março de 2022 até 2 de novembro de 2023  597 dias 
+
+# Preparando dados para treinamento e test
+
+X = history_df[['RSI', 'volume', 'close']]
+y = ...  # Substituir pelo valor do target.
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # 80% treinamento, 20% teste
+
+# RNN 
+# MLP
+# X = rsi, volume, price
+# y = target
