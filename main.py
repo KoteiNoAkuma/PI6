@@ -45,16 +45,19 @@ VOLUME = calculateVolume(data)
 history_df = pd.concat([RSI, PRICING, VOLUME], axis=1) # Junta os 3 dataframes em um Único
 history_df = history_df.dropna() # Remove as linhas com NaN do dataframe
 
-print(history_df) # Retorna dados de 16 de março de 2022 até 2 de novembro de 2023  597 dias 
+print(history_df) # Retorna dados de 16 de março de 2022 até 2 de novembro de 2023  597 dias  (Com algumas lacunas)
 
 # Preparando dados para treinamento e test
-
-X = history_df[['RSI', 'volume', 'close']]
-y = ...  # Substituir pelo valor do target.
+X = history_df[['RSI', 'volume']] # Dados que nao são target 
+y = history_df['close'] # Pegar todos os valores ? Ou o ultimo da coluna
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # 80% treinamento, 20% teste
 
-# RNN 
+print(X)
+print(y)
+
+# Proximo passo: enviar dados para treinamento, algoritmos sugeridos: 
+# LSTM
 # MLP
-# X = rsi, volume, price
-# y = target
+# RNN 
+
