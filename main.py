@@ -8,10 +8,14 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
-
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import LSTM, SimpleRNN, Dense
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import RandomForestRegressor
 
 data = None
 interval = "1d"
@@ -51,10 +55,50 @@ history_df = pd.concat([RSI, VOLUME, PRICING], axis=1) # Junta os 3 dataframes e
 history_df = history_df.dropna() # Remove as linhas com NaN do dataframe
 
 # Preparando dados para treinamento e teste
-X = history_df[["RSI", "volume"]]
+X = history_df[["RSI", "volume"]].values
 y = history_df['close'].values
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # 80% treinamento, 20% teste
+
+
+# Random Forest
+def randomForestRegression(X_train, X_test, y_train, y_test):
+    rf_regressor = RandomForestRegressor(n_estimators=100, random_state=0)
+    rf_regressor.fit(X_train, y_train)
+    y_pred = rf_regressor.predict(X_test)
+    r2_rf = r2_score(y_test, y_pred)
+    print("Real Data: ")
+    print(y_test)
+    print('===========')
+    print("Predicted Data: ")
+    print(y_pred)
+    print('===========')
+
+    return y_pred, r2_rf
+
+
+
+y_pred_rf, r2_rf = randomForestRegression(X_train, X_test, y_train, y_test)
+print("Random Forest R2: ", r2_rf)
+
+# Regressao linear
+def linear_regression(X_train, X_test, y_train, y_test):
+    regr = LinearRegression()
+    regr.fit(X_train, y_train)
+    y_pred = regr.predict(X_test)
+    r2 = r2_score(y_test, y_pred)
+    print("Real Data: ")
+    print(y_test)
+    print('===========')
+    print("Predicted Data: ")
+    print(y_pred)
+    print('===========')
+
+    return y_pred, r2
+
+y_pred, result = linear_regression(X_train, X_test, y_train, y_test)
+
+print("Linear Regression R2: ", result)
 
 # print(history_df) # Retorna dados de 16 de março de 2022 até 2 de novembro de 2023  597 dias  (Com algumas lacunas)
 
@@ -65,25 +109,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #     y_pred = regr.predict(X_test)
 #     r2 = r2_score(y_test, y_pred)
 
+#     print(y_test)
+#     print('===========')
+#     print(y_pred)
+
+#     print('===========')
+
 #     return y_pred, r2
+# y_pred, result = mlp(X_train, X_test, y_train, y_test)
 
-# Regressao linear
-def linear_regression(X_train, X_test, y_train, y_test):
-    regr = LinearRegression()
-    regr.fit(X_train, y_train)
-    y_pred = regr.predict(X_test)
-    r2 = r2_score(y_test, y_pred)
-
-    return y_pred, r2
-
-y_pred, result = linear_regression(X_train, X_test, y_train, y_test)
-print(result)
-
-# y_pred, result = mlp(X_train, X_test, y_train, y_test) 
-# print(y_pred)
-# print("===========")
-# print(y_test)
-# print("===========")
 # print(result)
+
+
 
 
