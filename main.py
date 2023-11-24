@@ -1,5 +1,3 @@
-#pip install TA-Lib
-
 import talib
 import numpy as np
 import requests
@@ -12,6 +10,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
+from sklearn.metrics import mean_absolute_error
+
 
 
 data = None
@@ -66,101 +66,76 @@ for i in range(len(price) - window_size):
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # 80% treinamento, 20% teste
 
-# Random Forest
-def randomForestRegression(X_train, X_test, y_train, y_test):
+# Utilizando todos os dados para previsão do próximo dia
+def randomForestRegression(X):
     rf_regressor = RandomForestRegressor(n_estimators=100, random_state=0)
     rf_regressor.fit(X, y)
     y_pred = rf_regressor.predict(X)
-    preco_previsto = y_pred[-1]
+    predicted_price = y_pred[-1]
 
-    r2_rf = r2_score(y, y_pred)
-    print('=========== Resultados ===========')
-    print("Real Data: ")
-    print(y)
-    print('=========== Previsões ===========')
-    print(y_pred)
-    print('=========== Preço Previsto ===========')
-    print("Preço previsto para o próximo dia:", preco_previsto)
-    print('=========== R² ===========')
-    print("R² Score:", r2_rf)
+    r2 = r2_score(y, y_pred)
+    mae = mean_absolute_error(y, y_pred)
 
-    return y_pred, r2_rf
+    print('Random Forest:')
+    print('Preço previsto para o próximo dia:', predicted_price)
+    print('R² Score:', r2)
+    print('Mean Absolute Error (MAE):', mae)
 
+    return y_pred, r2, mae
 
-
-y_pred_rf, r2_rf = randomForestRegression(X_train, X_test, y_train, y_test)
-
-print("Random Forest R2: ", r2_rf) 
-
-# Regressao linear
-def linear_regression(X_train, X_test, y_train, y_test):
+# Linear Regression
+def linear_regression(X):
     regr = LinearRegression()
     regr.fit(X, y)
     y_pred = regr.predict(X)
-    preco_previsto = y_pred[-1]
+    predicted_price = y_pred[-1]
 
     r2 = r2_score(y, y_pred)
-    print('=========== Resultados ===========')
-    print("Real Data: ")
-    print(y)
-    print('=========== Previsões ===========')
-    print(y_pred)
-    print('=========== Preço Previsto ===========')
-    print("Preço previsto para o próximo dia:", preco_previsto)
-    print('=========== R² ===========')
-    print("R² Score:", r2)
+    mae = mean_absolute_error(y, y_pred)
 
+    print('Linear Regression:')
+    print('Preço previsto para o próximo dia:', predicted_price)
+    print('R² Score:', r2)
+    print('Mean Absolute Error (MAE):', mae)
 
-    return y_pred, r2
+    return y_pred, r2, mae
 
-y_pred, result = linear_regression(X_train, X_test, y_train, y_test)
-print("Linear Regression R2: ", result) 
- 
-# Knn Regression
+# KNN Regression
 def knn_regression(X, y, n_neighbors=5):
     knn_regressor = KNeighborsRegressor(n_neighbors=n_neighbors)
     knn_regressor.fit(X, y)
-    y_pred = knn_regressor.predict(X_test)  # Altere esta linha para usar X_test ao invés de X
+    y_pred = knn_regressor.predict(X)
+    predicted_price = y_pred[-1]
 
-    preco_previsto = y_pred[-1]
+    r2 = r2_score(y, y_pred)
+    mae = mean_absolute_error(y, y_pred)
 
-    r2 = r2_score(y_test, y_pred)  # Use y_test em vez de y
+    print('KNN Regression:')
+    print('Preço previsto para o próximo dia:', predicted_price)
+    print('R² Score:', r2)
+    print('Mean Absolute Error (MAE):', mae)
 
-    print('=========== Resultados ===========')
-    print("Real Data: ")
-    print(y_test)
-    print('=========== Previsões ===========')
-    print(y_pred)
-    print('=========== Preço Previsto ===========')
-    print("Preço previsto para o próximo dia:", preco_previsto)
-    print('=========== R² ===========')
-    print("R² Score:", r2)
-
-    return y_pred, r2
-
-y_pred_knn, r2_knn = knn_regression(X_train, y_train)  # Ajuste a chamada da função com apenas dois argumentos
+    return y_pred, r2, mae
 
 # SVR Regression
 def svr_regression(X, y):
     svr_regressor = SVR(kernel='rbf') 
     svr_regressor.fit(X, y)
-    y_pred = svr_regressor.predict(X_test)
+    y_pred = svr_regressor.predict(X)
+    predicted_price = y_pred[-1]
 
-    preco_previsto = y_pred[-1]
+    r2 = r2_score(y, y_pred)
+    mae = mean_absolute_error(y, y_pred)
 
-    r2 = r2_score(y_test, y_pred)
+    print('SVR Regression:')
+    print('Preço previsto para o próximo dia:', predicted_price)
+    print('R² Score:', r2)
+    print('Mean Absolute Error (MAE):', mae)
 
-    print('=========== Resultados ===========')
-    print("Real Data: ")
-    print(y_test)
-    print('=========== Previsões ===========')
-    print(y_pred)
-    print('=========== Preço Previsto ===========')
-    print("Preço previsto para o próximo dia:", preco_previsto)
-    print('=========== R² ===========')
-    print("R² Score:", r2)
+    return y_pred, r2, mae
 
-    return y_pred, r2
-
-y_pred_svr, r2_svr = svr_regression(X_train, y_train)  
-print("SVR R2: ", r2_svr)
+# Prevendo todos os valorres.
+y_pred_rf, r2_rf, mae_rf = randomForestRegression(X)
+y_pred_lr, r2_lr, mae_lr = linear_regression(X)
+y_pred_knn, r2_knn, mae_knn = knn_regression(X, y)
+y_pred_svr, r2_svr, mae_svr = svr_regression(X, y)
