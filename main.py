@@ -12,16 +12,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error
 
-
-
-data = None
-interval = "1d"
-limit = 1000
-window_size = 60
-
-
 def get_binance_datarequest(ticker, interval, limit, start='2022-03-01 00:00:00'):
-    global data
     columns = ['open_time','open', 'high', 'low', 'close', 'volume','close_time', 'qav','num_trades','taker_base_vol','taker_quote_vol', 'ignore']
     start = int(datetime.datetime.timestamp(pd.to_datetime(start))*1000)
     url = f'https://www.binance.com/api/v3/klines?symbol={ticker}&limit={limit}&interval={interval}&startTime={start}'
@@ -30,44 +21,39 @@ def get_binance_datarequest(ticker, interval, limit, start='2022-03-01 00:00:00'
     usecols=['open', 'high', 'low', 'close', 'volume', 'qav','num_trades','taker_base_vol','taker_quote_vol']
     data = data[usecols]
 
-get_binance_datarequest('BTCUSDT', interval, limit)
+    return data
 
-# Calculando RSI usando TA-Lib 
-def calculateRSI(data): # Não mais usado
+def calculateRSI(data):
     return talib.RSI(np.array(data['close']), timeperiod=14)
 
 def calculatePricing(data): 
     return data['close']
 
-def calculateVolume(data): # Não mais usado
+def calculateVolume(data):
     return data['volume']
 
-# Calculo do RSI
-rsi_values = calculateRSI(data)
+def prepare_data(data, window_size=60):
+    rsi_values = calculateRSI(data)
+    RSI = pd.DataFrame({'RSI': rsi_values}, index=data.index[-len(rsi_values):])
+    price = calculatePricing(data)
+    VOLUME = calculateVolume(data)
 
-RSI = pd.DataFrame({'RSI': rsi_values}, index=data.index[-len(rsi_values):]) # Dessa forma esse dataframe vai ter o mesmo tamanho dos outros dois dataframes
-price = calculatePricing(data)
-VOLUME = calculateVolume(data)
+    history_df = pd.concat([RSI, VOLUME, price], axis=1)
+    price = price.dropna().values
 
-history_df = pd.concat([RSI, VOLUME, price], axis=1) # Junta os 3 dataframes em um Único
-price = price.dropna().values # Remove as linhas com NaN do dataframe
+    X = []
+    y = []
 
-# Preparando dados para treinamento e teste
-X = []
-y = []
+    for i in range(len(price) - window_size):
+        window = price[i:i+window_size]
+        target = price[i+window_size]
 
-# Janelamento
-for i in range(len(price) - window_size):
-    window = price[i:i+window_size] # Elemento 61 nao entra no primeiro loop
-    target = price[i+window_size] #  Elemento 60 + i
+        X.append(window)
+        y.append(target)
 
-    X.append(window)
-    y.append(target)
+    return X, y
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # 80% treinamento, 20% teste
-
-# Utilizando todos os dados para previsão do próximo dia
-def randomForestRegression(X):
+def randomForestRegression(X, y):
     rf_regressor = RandomForestRegressor(n_estimators=100, random_state=0)
     rf_regressor.fit(X, y)
     y_pred = rf_regressor.predict(X)
@@ -83,8 +69,7 @@ def randomForestRegression(X):
 
     return y_pred, r2, mae
 
-# Linear Regression
-def linear_regression(X):
+def linear_regression(X, y):
     regr = LinearRegression()
     regr.fit(X, y)
     y_pred = regr.predict(X)
@@ -100,7 +85,6 @@ def linear_regression(X):
 
     return y_pred, r2, mae
 
-# KNN Regression
 def knn_regression(X, y, n_neighbors=5):
     knn_regressor = KNeighborsRegressor(n_neighbors=n_neighbors)
     knn_regressor.fit(X, y)
@@ -117,7 +101,6 @@ def knn_regression(X, y, n_neighbors=5):
 
     return y_pred, r2, mae
 
-# SVR Regression
 def svr_regression(X, y):
     svr_regressor = SVR(kernel='rbf') 
     svr_regressor.fit(X, y)
@@ -134,8 +117,21 @@ def svr_regression(X, y):
 
     return y_pred, r2, mae
 
-# Prevendo todos os valorres.
-y_pred_rf, r2_rf, mae_rf = randomForestRegression(X)
-y_pred_lr, r2_lr, mae_lr = linear_regression(X)
-y_pred_knn, r2_knn, mae_knn = knn_regression(X, y)
-y_pred_svr, r2_svr, mae_svr = svr_regression(X, y)
+# Para melhor organizaçao do codigo
+
+def run():
+    ticker = 'BTCUSDT'
+    interval = '1d'
+    limit = 1000
+    window_size = 60
+
+    data = get_binance_datarequest(ticker, interval, limit)
+    X, y = prepare_data(data, window_size)
+
+    y_pred_rf, r2_rf, mae_rf = randomForestRegression(X, y)
+    y_pred_lr, r2_lr, mae_lr = linear_regression(X, y)
+    y_pred_knn, r2_knn, mae_knn = knn_regression(X, y)
+    y_pred_svr, r2_svr, mae_svr = svr_regression(X, y)
+
+
+run()
