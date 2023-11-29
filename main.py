@@ -14,6 +14,8 @@ from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error
 from tkinter import *
 import tkinter.font as tkFont
+from sklearn.neural_network import MLPRegressor
+
 
 def get_binance_datarequest(ticker, interval, limit, start='2022-03-01 00:00:00'):
     columns = ['open_time','open', 'high', 'low', 'close', 'volume','close_time', 'qav','num_trades','taker_base_vol','taker_quote_vol', 'ignore']
@@ -36,6 +38,7 @@ def prepare_data(data, window_size=60):
     
     previous_close = data['close'].iloc[-1]  # Valor de fechamento do dia atual
 
+    last_60_days = price[-window_size:]  # Últimos 60 dias
 
     X = []
     y = []
@@ -47,73 +50,73 @@ def prepare_data(data, window_size=60):
         X.append(window)
         y.append(target)
 
-    return X, y, previous_close
+    return X, y, previous_close, last_60_days
 
-def randomForestRegression(X, y):
+def randomForestRegression(X_train, y_train, X_test, y_test, last_60_days):
     rf_regressor = RandomForestRegressor(n_estimators=200, random_state=0)
-    rf_regressor.fit(X, y)
-    y_pred = rf_regressor.predict(X)
-    predicted_price = y_pred[-1]
+    rf_regressor.fit(X_train, y_train)
+    y_pred = rf_regressor.predict(X_test)
+    
+    predicted_price = rf_regressor.predict(last_60_days.reshape(1,-1))[0]
+    
+    r2 = r2_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
-
-    print('Random Forest:')
-    print('Preço previsto para o próximo dia:', predicted_price)
-    print('R² Score:', r2)
-    print('Mean Absolute Error (MAE):', mae)
+    thread = threading.Thread(target=print_results, args=('Random Forest', predicted_price, r2, mae))
+    thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-def linear_regression(X, y):
+def linear_regression(X_train, y_train, X_test, y_test, last_60_days):
     regr = LinearRegression()
-    regr.fit(X, y)
-    y_pred = regr.predict(X)
-    predicted_price = y_pred[-1]
+    regr.fit(X_train, y_train)
+    y_pred = regr.predict(X_test)
+    
+    predicted_price = regr.predict(last_60_days.reshape(1, -1))[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
 
-    print('Linear Regression:')
-    print('Preço previsto para o próximo dia:', predicted_price)
-    print('R² Score:', r2)
-    print('Mean Absolute Error (MAE):', mae)
+    thread = threading.Thread(target=print_results, args=('Linear Regression', predicted_price, r2, mae))
+    thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-def knn_regression(X, y, n_neighbors=5):
+def knn_regression(X_train, y_train, X_test, y_test, last_60_days, n_neighbors=5):
     knn_regressor = KNeighborsRegressor(n_neighbors=n_neighbors)
-    knn_regressor.fit(X, y)
-    y_pred = knn_regressor.predict(X)
-    predicted_price = y_pred[-1]
+    knn_regressor.fit(X_train, y_train)
+    y_pred = knn_regressor.predict(X_test)
+    
+    predicted_price = knn_regressor.predict(last_60_days.reshape(1, -1))[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
 
-    print('KNN Regression:')
-    print('Preço previsto para o próximo dia:', predicted_price)
-    print('R² Score:', r2)
-    print('Mean Absolute Error (MAE):', mae)
+    thread = threading.Thread(target=print_results, args=('KNN Regression', predicted_price, r2, mae))
+    thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-def svr_regression(X, y):
+def svr_regression(X_train, y_train, X_test, y_test, last_60_days):
     svr_regressor = SVR(kernel='rbf')
-    svr_regressor.fit(X, y)
-    y_pred = svr_regressor.predict(X)
-    predicted_price = y_pred[-1]
+    svr_regressor.fit(X_train, y_train)
+    y_pred = svr_regressor.predict(X_test)
+    
+    predicted_price = svr_regressor.predict(last_60_days.reshape(1, -1))[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
 
-    print('SVR Regression:')
-    print('Preço previsto para o próximo dia:', predicted_price)
-    print('R² Score:', r2)
-    print('Mean Absolute Error (MAE):', mae)
+    thread = threading.Thread(target=print_results, args=('SVR Regression', predicted_price, r2, mae))
+    thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-# Para melhor organizaçao do codigo
+def print_results(algorithm_name, predicted_price, r2, mae):
+    print(f'{algorithm_name}:')
+    print('Preço previsto para o próximo dia:', predicted_price)
+    print('R² Score:', r2)
+    print('Mean Absolute Error (MAE):', mae)
 
 
 def design(predicted_rf, r2_rf, mae_rf, predicted_lr, r2_lr, mae_lr, predicted_knn, r2_knn, mae_knn, predicted_svr, r2_svr, mae_svr, previous_close):
@@ -149,15 +152,15 @@ def run():
     interval = '1d'
     limit = 1000
     window_size = 60
-
     data = get_binance_datarequest(ticker, interval, limit)
-    X, y, previous_close = prepare_data(data, window_size)
+    X, y, previous_close, last_60_days = prepare_data(data, window_size)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    y_pred_rf, r2_rf, mae_rf, predicted_rf = randomForestRegression(X_train, y_train)
-    y_pred_lr, r2_lr, mae_lr, predicted_lr = linear_regression(X_train, y_train)
-    y_pred_knn, r2_knn, mae_knn, predicted_knn = knn_regression(X_train, y_train)
-    y_pred_svr, r2_svr, mae_svr, predicted_svr = svr_regression(X_train, y_train)
+    y_pred_rf, r2_rf, mae_rf, predicted_rf = randomForestRegression(X_train, y_train, X_test, y_test, last_60_days)
+    y_pred_lr, r2_lr, mae_lr, predicted_lr = linear_regression(X_train, y_train, X_test, y_test, last_60_days)
+    y_pred_knn, r2_knn, mae_knn, predicted_knn = knn_regression(X_train, y_train, X_test, y_test, last_60_days)
+    y_pred_svr, r2_svr, mae_svr, predicted_svr = svr_regression(X_train, y_train, X_test, y_test, last_60_days)
+
     design(predicted_rf, r2_rf, mae_rf, predicted_lr, r2_lr, mae_lr, predicted_knn, r2_knn, mae_knn, predicted_svr, r2_svr, mae_svr, previous_close)
 run()
