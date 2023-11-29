@@ -14,6 +14,8 @@ from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error
 from tkinter import *
 import tkinter.font as tkFont
+from sklearn.neural_network import MLPRegressor
+
 
 def get_binance_datarequest(ticker, interval, limit, start='2022-03-01 00:00:00'):
     columns = ['open_time','open', 'high', 'low', 'close', 'volume','close_time', 'qav','num_trades','taker_base_vol','taker_quote_vol', 'ignore']
@@ -47,58 +49,66 @@ def prepare_data(data, window_size=60):
         X.append(window)
         y.append(target)
 
-    return X, y, previous_close
+    simulated_next_day = np.append(price[-window_size+1:], previous_close)  # Simula o próximo dia usando o último preço conhecido como fechamento
 
-def randomForestRegression(X, y):
+
+    return X, y, previous_close, simulated_next_day
+
+def randomForestRegression(X_train, y_train, last_known_data):
     rf_regressor = RandomForestRegressor(n_estimators=200, random_state=0)
-    rf_regressor.fit(X, y)
-    y_pred = rf_regressor.predict(X)
-    predicted_price = y_pred[-1]
+    rf_regressor.fit(X_train, y_train)
+    y_pred = rf_regressor.predict(X_train)
+    
+    next_day_point = last_known_data.reshape(1, -1)  
+    predicted_price = rf_regressor.predict(next_day_point)[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_train, y_pred)
+    mae = mean_absolute_error(y_train, y_pred)
 
     thread = threading.Thread(target=print_results, args=('Random Forest', predicted_price, r2, mae))
     thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-def linear_regression(X, y):
+def linear_regression(X_train, y_train, last_known_data):
     regr = LinearRegression()
-    regr.fit(X, y)
-    y_pred = regr.predict(X)
-    predicted_price = y_pred[-1]
+    regr.fit(X_train, y_train)
+    y_pred = regr.predict(X_train)
+    
+    predicted_price = regr.predict(last_known_data.reshape(1, -1))[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_train, y_pred)
+    mae = mean_absolute_error(y_train, y_pred)
 
     thread = threading.Thread(target=print_results, args=('Linear Regression', predicted_price, r2, mae))
     thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-def knn_regression(X, y, n_neighbors=5):
+def knn_regression(X_train, y_train, last_known_data, n_neighbors=5):
     knn_regressor = KNeighborsRegressor(n_neighbors=n_neighbors)
-    knn_regressor.fit(X, y)
-    y_pred = knn_regressor.predict(X)
-    predicted_price = y_pred[-1]
+    knn_regressor.fit(X_train, y_train)
+    y_pred = knn_regressor.predict(X_train)
+    
+    predicted_price = knn_regressor.predict(last_known_data.reshape(1, -1))[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_train, y_pred)
+    mae = mean_absolute_error(y_train, y_pred)
 
     thread = threading.Thread(target=print_results, args=('KNN Regression', predicted_price, r2, mae))
     thread.start()
 
     return y_pred, r2, mae, predicted_price
 
-def svr_regression(X, y):
+def svr_regression(X_train, y_train, last_known_data):
     svr_regressor = SVR(kernel='rbf')
-    svr_regressor.fit(X, y)
-    y_pred = svr_regressor.predict(X)
-    predicted_price = y_pred[-1]
+    svr_regressor.fit(X_train, y_train)
+    y_pred = svr_regressor.predict(X_train)
+    
+    predicted_price = svr_regressor.predict(last_known_data.reshape(1, -1))[0]
 
-    r2 = r2_score(y, y_pred)
-    mae = mean_absolute_error(y, y_pred)
+    r2 = r2_score(y_train, y_pred)
+    mae = mean_absolute_error(y_train, y_pred)
 
     thread = threading.Thread(target=print_results, args=('SVR Regression', predicted_price, r2, mae))
     thread.start()
@@ -145,15 +155,19 @@ def run():
     interval = '1d'
     limit = 1000
     window_size = 60
-
     data = get_binance_datarequest(ticker, interval, limit)
-    X, y, previous_close = prepare_data(data, window_size)
+    X, y, previous_close, simulated_next_day = prepare_data(data, window_size)
+
+    last_known_data = X[-1]
+
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    y_pred_rf, r2_rf, mae_rf, predicted_rf = randomForestRegression(X_train, y_train)
-    y_pred_lr, r2_lr, mae_lr, predicted_lr = linear_regression(X_train, y_train)
-    y_pred_knn, r2_knn, mae_knn, predicted_knn = knn_regression(X_train, y_train)
-    y_pred_svr, r2_svr, mae_svr, predicted_svr = svr_regression(X_train, y_train)
+    y_pred_rf, r2_rf, mae_rf, predicted_rf = randomForestRegression(X_train, y_train, last_known_data)
+    y_pred_lr, r2_lr, mae_lr, predicted_lr = linear_regression(X_train, y_train, last_known_data)
+    y_pred_knn, r2_knn, mae_knn, predicted_knn = knn_regression(X_train, y_train, last_known_data)
+    y_pred_svr, r2_svr, mae_svr, predicted_svr = svr_regression(X_train, y_train, last_known_data)
+    y_pred_mlp, r2_mlp, mae_mlp, predicted_mlp = mlp_regression(X, y, last_known_data)
+
     design(predicted_rf, r2_rf, mae_rf, predicted_lr, r2_lr, mae_lr, predicted_knn, r2_knn, mae_knn, predicted_svr, r2_svr, mae_svr, previous_close)
 run()
