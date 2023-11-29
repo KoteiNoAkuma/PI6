@@ -14,7 +14,7 @@ from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error
 from tkinter import *
 import tkinter.font as tkFont
-from sklearn.neural_network import MLPRegressor
+from tkinter import messagebox
 
 
 def get_binance_datarequest(ticker, interval, limit, start='2022-03-01 00:00:00'):
@@ -119,32 +119,44 @@ def print_results(algorithm_name, predicted_price, r2, mae):
     print('Mean Absolute Error (MAE):', mae)
 
 
+def exibir_textbox_MAE():
+    ado = messagebox.showinfo("MAE", "O MAE mostra o quão perto as previsões do modelo estão dos valores reais, medindo a média dos erros sem considerar se são positivos ou negativos. (em modulo)")
+
+def exibir_textbox_R2():
+    ado = messagebox.showinfo("R²", "O R² indica o quanto o modelo explica a variação nos dados. Quanto mais próximo de 1, melhor o modelo se ajusta aos dados; significa que as previsões estão mais próximas dos valores reais.")
+
+
 def design(predicted_rf, r2_rf, mae_rf, predicted_lr, r2_lr, mae_lr, predicted_knn, r2_knn, mae_knn, predicted_svr, r2_svr, mae_svr, previous_close):
     top = Tk()
+    top.title("Bitcoin Watcher")
     top.geometry("700x450")
+    top.configure(background='green')
     fontExample = tkFont.Font(family="Arial", size=9, weight="bold", slant="italic")
-    algoritmo = Label(top, text="ALGORITMO", font=fontExample).place(x=30, y=50)
-    erro = Label(top, text="MAE", font=fontExample).place(x=180, y=50)
-    valorPrevisto = Label(top, text="VALOR PREVISTO", font=fontExample).place(x=280, y=50)
-    r2 = Label(top, text="R2", font=fontExample).place(x=465, y=50)
-    valorAtual = Label(top, text="VALOR ATUAL", font=fontExample).place(x=580, y=50)
-    randomForest = Label(top, text="Random\nForest").place(x=30, y=120)
-    linearRegression = Label(top, text="Linear\nRegression").place(x=30, y=180)
-    knnRegression = Label(top, text="KNN\nRegression").place(x=30, y=240)
-    svrRegression = Label(top, text="SVR\nRegression").place(x=30, y=300)
-    error1 = Label(top, text=str(round(mae_rf, 2))).place(x=180, y=120)
-    error2 = Label(top, text=str(round(mae_lr, 2))).place(x=180, y=180)
-    error3 = Label(top, text=str(round(mae_knn, 2))).place(x=180, y=240)
-    error4 = Label(top, text=str(round(mae_svr, 2))).place(x=180, y=300)
-    value_predict1 = Label(top, text=str(round(predicted_rf, 2))).place(x=310, y=120)
-    value_predict2 = Label(top, text=str(round(predicted_lr, 2))).place(x=310, y=180)
-    value_predict3 = Label(top, text=str(round(predicted_knn, 2))).place(x=310, y=240)
-    value_predict4 = Label(top, text=str(round(predicted_svr, 2))).place(x=310, y=300)
-    r2_Rf = Label(top, text=str(round(r2_rf, 2))).place(x=450, y=120)
-    r2_Lr = Label(top, text=str(round(r2_lr, 2))).place(x=450, y=180)
-    r2_Knn = Label(top, text=str(round(r2_knn, 2))).place(x=450, y=240)
-    r2_Svr = Label(top, text=str(round(r2_svr, 2))).place(x=450, y=300)
-    current_value = Label(top, text=str(round(previous_close, 2))).place(x=600, y=210)
+    algoritmo = Label(top, text="ALGORITMO", font=fontExample, background='green').place(x=30, y=50)
+    erro = Label(top, text="MAE", font=fontExample, background='green').place(x=180, y=50)
+    botao = Button(top, text="?", background='red', command=exibir_textbox_MAE).place(x=220, y=50)
+    valorPrevisto = Label(top, text="R2", font=fontExample, background='green').place(x=310, y=50)
+    r2 = Label(top, text="VALOR PREVISTO", font=fontExample, background='green').place(x=420, y=50)
+    botao = Button(top, text="?", background='red', command=exibir_textbox_R2).place(x=535, y=50)
+    valorAtual = Label(top, text="VALOR ATUAL", font=fontExample, background='green').place(x=580, y=50)
+    randomForest = Label(top, text="Random\nForest", background='green').place(x=30, y=120)
+    linearRegression = Label(top, text="Linear\nRegression", background='green').place(x=30, y=180)
+    knnRegression = Label(top, text="KNN\nRegression", background='green').place(x=30, y=240)
+    svrRegression = Label(top, text="SVR\nRegression", background='green').place(x=30, y=300)
+    error1 = Label(top, text=str(round(mae_rf, 2)), background='green').place(x=180, y=120)
+    error2 = Label(top, text=str(round(mae_lr, 2)), background='green').place(x=180, y=180)
+    error3 = Label(top, text=str(round(mae_knn, 2)), background='green').place(x=180, y=240)
+    error4 = Label(top, text=str(round(mae_svr, 2)), background='green').place(x=180, y=300)
+    r2_Rf = Label(top, text=str(round(r2_rf, 2)), background='green').place(x=310, y=120)
+    r2_Lr = Label(top, text=str(round(r2_lr, 2)), background='green').place(x=310, y=180)
+    r2_Knn = Label(top, text=str(round(r2_knn, 2)), background='green').place(x=310, y=240)
+    r2_Svr = Label(top, text=str(round(r2_svr, 2)), background='green').place(x=310, y=300)
+    value_predicted_Rf= Label(top, text=str(round(predicted_rf, 2)), background='green').place(x=450, y=120)
+    value_predicted_Lr= Label(top, text=str(round(predicted_lr, 2)), background='green').place(x=450, y=180)
+    value_predicted_Knn= Label(top, text=str(round(predicted_knn, 2)), background='green').place(x=450, y=240)
+    value_predicted_Svr= Label(top, text=str(round(predicted_svr, 2)), background='green').place(x=450, y=300)
+    current_value = Label(top, text=str(round(previous_close, 2)), background='green').place(x=600, y=210)
+
     top.mainloop()
 
 def run():
